@@ -1,75 +1,169 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+import pickle
+from pathlib import Path
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-app = FastAPI(title="Content-Based Recommendation API")
+app = FastAPI(title="Recommendation System API")
 
-# ================= LOAD DATA =================
-df = pd.read_csv("data/content.csv")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# clean titles
-df['title'] = df['title'].fillna("")
-df['title_clean'] = df['title'].str.strip().str.lower()
+BASE_DIR = Path(__file__).resolve().parent
 
-df['combined'] = df['title']
+content_df = pd.read_csv(BASE_DIR / "data" / "content.csv")
+interactions_df = pd.read_csv(BASE_DIR / "data" / "interactions.csv")
+df = pd.read_csv(BASE_DIR / "data" / "df.csv")
 
-# ================= TF-IDF =================
-vectorizer = TfidfVectorizer(stop_words='english')
-tfidf_matrix = vectorizer.fit_transform(df['combined'])
+# =========================
+# TF-IDF
+# =========================
+content_df["features"] = (
+    content_df["category"].astype(str) + " " +
+    content_df["level"].astype(str) + " " +
+    content_df["difficulty"].astype(str) + " " +
+    content_df["description"].astype(str)
+)
 
-# similarity matrix
-similarity = cosine_similarity(tfidf_matrix)
+vectorizer = TfidfVectorizer(stop_words="english")
+feature_matrix = vectorizer.fit_transform(content_df["features"])
+cosine_sim = cosine_similarity(feature_matrix)
 
 
-# ================= HELPER =================
-def find_closest_title(title):
-    """يدعم البحث الجزئي"""
-    title = title.lower().strip()
+# =========================
+# SAFE title -> content_id
+# =========================
+def get_content_id(title: str):
 
-    matches = df[df['title_clean'].str.contains(title)]
+    query_vec = vectorizer.transform([title])
+    sims = cosine_similarity(query_vec, feature_matrix)
 
-    if len(matches) == 0:
+    idx = np.argmax(sims)
+
+    # safety check
+    if sims[0][idx] == 0:
         return None
 
-    return matches.iloc[0]['title_clean']
+    return int(content_df.iloc[idx]["content_id"])
 
 
-# ================= API =================
+# =========================
+# CONTENT-BASED
+# =========================
+def recommend_content(title: str):
 
-@app.get("/")
-def home():
-    return {"message": "API is running 🚀"}
+    cid = get_content_id(title)
+    if cid is None:
+        return []
 
+    row = content_df[content_df["content_id"] == cid]
+    if row.empty:
+        return []
 
-@app.get("/recommend")
-def recommend(title: str = Query(..., description="Enter course title"), k: int = 5):
+    idx = row.index[0]
 
-    title_clean = find_closest_title(title)
+    scores = cosine_sim[idx]
+    rec_idx = np.argsort(scores)[::-1]
 
-    if title_clean is None:
-        return {"error": "Title not found"}
+    results = []
 
-    idx = df[df['title_clean'] == title_clean].index[0]
+    for i in rec_idx:
+        rec_id = content_df.iloc[i]["content_id"]
 
-    scores = list(enumerate(similarity[idx]))
-    scores = sorted(scores, key=lambda x: x[1], reverse=True)
+        if rec_id != cid:
+            results.append({
+                "content_id": int(rec_id),
+                "title": content_df.iloc[i]["title"]
+            })
 
-    recommended = []
-    seen_titles = set()
-    input_title = df.iloc[idx]['title']
-
-    for i in scores[1:]:
-        if len(recommended) >= k:
+        if len(results) == 5:
             break
 
-        rec_title = df.iloc[i[0]]['title']
+    return results
 
-        if rec_title != input_title and rec_title not in seen_titles:
-            recommended.append(rec_title)
-            seen_titles.add(rec_title)
+
+# =========================
+# COLLABORATIVE (stable version)
+# =========================
+def collaborative_recommend(title: str):
+
+    cid = get_content_id(title)
+    if cid is None:
+        return []
+
+    users = interactions_df[
+        interactions_df["content_id"] == cid
+    ]["user_id"].unique()
+
+    if len(users) == 0:
+        return []
+
+    recs = interactions_df[
+        interactions_df["user_id"].isin(users)
+    ]["content_id"].value_counts().head(5).index
+
+    return content_df[
+        content_df["content_id"].isin(recs)
+    ][["content_id", "title"]].to_dict(orient="records")
+
+
+# =========================
+# ML (popularity-based safe)
+# =========================
+def ml_recommend(title: str):
+
+    cid = get_content_id(title)
+    if cid is None:
+        return []
+
+    users = interactions_df[
+        interactions_df["content_id"] == cid
+    ]["user_id"].values
+
+    if len(users) == 0:
+        return []
+
+    top_items = interactions_df[
+        interactions_df["user_id"].isin(users)
+    ]["content_id"].value_counts().head(5).index
+
+    return content_df[
+        content_df["content_id"].isin(top_items)
+    ][["content_id", "title"]].to_dict(orient="records")
+
+
+# =========================
+# API
+# =========================
+@app.get("/recommend")
+def recommend(title: str):
+
+    content = recommend_content(title)
+    collab = collaborative_recommend(title)
+    ml = ml_recommend(title)
+
+    final = content + collab + ml
+
+    seen = set()
+    unique = []
+
+    for item in final:
+        if item["content_id"] not in seen:
+            unique.append(item)
+            seen.add(item["content_id"])
+
+    if len(unique) == 0:
+        raise HTTPException(status_code=404, detail="No recommendations found")
 
     return {
-        "input": input_title,
-        "recommendations": recommended
+        "input": title,
+        "recommendations": unique[:10]
     }
