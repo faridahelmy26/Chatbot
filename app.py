@@ -4,32 +4,31 @@ from fastapi import FastAPI
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# =========================
-# Load Data
-# =========================
-content_df = pd.read_csv("data/content.csv")
-interactions_df = pd.read_csv("data/interactions.csv")
-users_df = pd.read_excel("data/users.xlsx")
-# =========================
-# Build Text Features
-# =========================
-content_df['text'] =(
-    content_df['category'].astype(str) + " " +
-    content_df['level'].astype(str) + " " +
-    content_df['description'].astype(str)
-    )
-
-# =========================
-# Load Model
-# =========================
-model = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = model.encode(content_df['text'].tolist())
-cosine_sim = cosine_similarity(embeddings)
-
-# =========================
-# Create FastAPI App
-# =========================
 app = FastAPI(title="Recommendation System API")
+
+# Global variables
+content_df = None
+cosine_sim = None
+model = None
+
+@app.on_event("startup")
+async def load_data():
+    global content_df, cosine_sim, model
+    
+    content_df = pd.read_csv("data/content.csv")
+    interactions_df = pd.read_csv("data/interactions.csv")
+    users_df = pd.read_excel("data/users.xlsx")
+    
+    content_df['text'] = (
+        content_df['category'].astype(str) + " " +
+        content_df['level'].astype(str) + " " +
+        content_df['description'].astype(str)
+    )
+    
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    embeddings = model.encode(content_df['text'].tolist())
+    cosine_sim = cosine_similarity(embeddings)
+
 
 # =========================
 # Helper Function
