@@ -1,164 +1,88 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
-import pickle
-from pathlib import Path
+from fastapi import FastAPI
+from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
 
+# =========================
+# Load Data
+# =========================
+content_df = pd.read_csv(r"E:\faculty\Ma'man\recommendation_system\Recommendation-System-2\data\content.csv")
+interactions_df = pd.read_csv(r"E:\faculty\Ma'man\recommendation_system\Recommendation-System-2\data\interactions.csv")
+users_df = pd.read_excel(r"E:\faculty\Ma'man\recommendation_system\Recommendation-System-2\data\users.xlsx")
+# =========================
+# Build Text Features
+# =========================
+content_df['text'] =(
+    content_df['category'].astype(str) + " " +
+    content_df['level'].astype(str) + " " +
+    content_df['description'].astype(str)
+    )
+
+# =========================
+# Load Model
+# =========================
+model = SentenceTransformer('all-MiniLM-L6-v2')
+embeddings = model.encode(content_df['text'].tolist())
+cosine_sim = cosine_similarity(embeddings)
+
+# =========================
+# Create FastAPI App
+# =========================
 app = FastAPI(title="Recommendation System API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-BASE_DIR = Path(__file__).resolve().parent
-
-content_df = pd.read_csv(BASE_DIR / "data" / "content.csv")
-interactions_df = pd.read_csv(BASE_DIR / "data" / "interactions.csv")
-df = pd.read_csv(BASE_DIR / "data" / "df.csv")
-
 # =========================
-# TF-IDF
+# Helper Function
 # =========================
-content_df["features"] = (
-    content_df["category"].astype(str) + " " +
-    content_df["level"].astype(str) + " " +
-    content_df["difficulty"].astype(str) + " " +
-    content_df["description"].astype(str)
-)
+def recommend_by_title(title, top_n=5):
 
-vectorizer = TfidfVectorizer(stop_words="english")
-feature_matrix = vectorizer.fit_transform(content_df["features"])
-cosine_sim = cosine_similarity(feature_matrix)
+    # البحث بجزء من الاسم
+    matches = content_df[
+        content_df['title']
+        .str.lower()
+        .str.contains(title.lower(), na=False)
+    ]
 
+    if len(matches) == 0:
+        return {
+            "error": f"No course found containing '{title}'"
+        }
 
-# =========================
-# SAFE title -> content_id
-# =========================
-def get_content_id(title: str):
-    query_vec = vectorizer.transform([title])
-    sims = cosine_similarity(query_vec, feature_matrix)
-    idx = np.argmax(sims)
-    
-    # Always return the best match (no threshold)
-    return int(content_df.iloc[idx]["content_id"])
+    # أول كورس مطابق
+    idx = matches.index[0]
 
+    selected_course = content_df.iloc[idx]['title']
 
-# =========================
-# CONTENT-BASED
-# =========================
-def recommend_content(title: str):
+    # similarity scores
+    sim_scores = list(enumerate(cosine_sim[idx]))
 
-    cid = get_content_id(title)
-    if cid is None:
-        return []
+    sim_scores = sorted(
+        sim_scores,
+        key=lambda x: x[1],
+        reverse=True
+    )
 
-    row = content_df[content_df["content_id"] == cid]
-    if row.empty:
-        return []
+    sim_scores = sim_scores[1:top_n+1]
 
-    idx = row.index[0]
+    recommendations = []
 
-    scores = cosine_sim[idx]
-    rec_idx = np.argsort(scores)[::-1]
+    for i, score in sim_scores:
 
-    results = []
-
-    for i in rec_idx:
-        rec_id = content_df.iloc[i]["content_id"]
-
-        if rec_id != cid:
-            results.append({
-                "content_id": int(rec_id),
-                "title": content_df.iloc[i]["title"]
-            })
-
-        if len(results) == 5:
-            break
-
-    return results
-
-
-# =========================
-# COLLABORATIVE (stable version)
-# =========================
-def collaborative_recommend(title: str):
-
-    cid = get_content_id(title)
-    if cid is None:
-        return []
-
-    users = interactions_df[
-        interactions_df["content_id"] == cid
-    ]["user_id"].unique()
-
-    if len(users) == 0:
-        return []
-
-    recs = interactions_df[
-        interactions_df["user_id"].isin(users)
-    ]["content_id"].value_counts().head(5).index
-
-    return content_df[
-        content_df["content_id"].isin(recs)
-    ][["content_id", "title"]].to_dict(orient="records")
-
-
-# =========================
-# ML (popularity-based safe)
-# =========================
-def ml_recommend(title: str):
-
-    cid = get_content_id(title)
-    if cid is None:
-        return []
-
-    users = interactions_df[
-        interactions_df["content_id"] == cid
-    ]["user_id"].values
-
-    if len(users) == 0:
-        return []
-
-    top_items = interactions_df[
-        interactions_df["user_id"].isin(users)
-    ]["content_id"].value_counts().head(5).index
-
-    return content_df[
-        content_df["content_id"].isin(top_items)
-    ][["content_id", "title"]].to_dict(orient="records")
-
-
-# =========================
-# API
-# =========================
-@app.get("/recommend")
-def recommend(title: str):
-
-    content = recommend_content(title)
-    collab = collaborative_recommend(title)
-    ml = ml_recommend(title)
-
-    final = content + collab + ml
-
-    seen = set()
-    unique = []
-
-    for item in final:
-        if item["content_id"] not in seen:
-            unique.append(item)
-            seen.add(item["content_id"])
-
-    if len(unique) == 0:
-        raise HTTPException(status_code=404, detail="No recommendations found")
+        recommendations.append({
+            "content_id": int(content_df.iloc[i]['content_id']),
+            "title": content_df.iloc[i]['title'],
+            "category": content_df.iloc[i]['category'],
+            "level": content_df.iloc[i]['level'],
+            "score": round(float(score), 4)
+        })
 
     return {
-        "input": title,
-        "recommendations": unique[:10]
+        "matched_course": selected_course,
+        "recommendations": recommendations
     }
+# =========================
+# API Endpoint
+# =========================
+@app.get("/recommend")
+def recommend(title: str, top_n: int = 5):
+    return recommend_by_title(title, top_n)
