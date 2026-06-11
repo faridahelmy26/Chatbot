@@ -7,9 +7,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 # =========================
 # Load Data
 # =========================
-content_df = pd.read_csv("content.csv")
-interactions_df = pd.read_csv("interactions.csv")
-users_df = pd.read_excel("users.xlsx")
+content_df = pd.read_csv("data/content.csv")
+interactions_df = pd.read_csv("data/interactions.csv")
+users_df = pd.read_excel("data/users.xlsx")
 # =========================
 # Build Text Features
 # =========================
