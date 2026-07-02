@@ -78,7 +78,7 @@ desktop.ini
 # =========================
 # Project Specific - Data
 # =========================
-data/
+#data/
 #*.csv
 #*.xlsx
 *.xls
