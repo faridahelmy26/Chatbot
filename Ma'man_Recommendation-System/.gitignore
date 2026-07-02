@@ -64,10 +64,10 @@ desktop.ini
 # =========================
 # Project Specific - Models
 # =========================
-models/
-*.pkl
+#models/
+#*.pkl
 *.pickle
-*.joblib
+#*.joblib
 *.h5
 *.pb
 *.onnx
@@ -79,10 +79,10 @@ models/
 # Project Specific - Data
 # =========================
 data/
-*.csv
-*.xlsx
+#*.csv
+#*.xlsx
 *.xls
-*.json
+#*.json
 *.parquet
 *.db
 *.sqlite
@@ -92,8 +92,8 @@ data/
 # =========================
 # Project Specific - Cache & Logs
 # =========================
-cache/
-logs/
+#cache/
+#logs/
 *.log
 *.tmp
 *.temp
@@ -269,7 +269,7 @@ htmlcov/
 # =========================
 # Railway / Heroku
 # =========================
-*.railway
+#*.railway
 *.heroku
-*.procfile
+#*.procfile
 *.profile
