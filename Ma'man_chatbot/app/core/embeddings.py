@@ -3,6 +3,8 @@ import numpy as np
 from pathlib import Path
 import warnings
 import os
+import asyncio
+import threading
 
 # تجاهل التحذيرات
 warnings.filterwarnings("ignore")
@@ -38,43 +40,40 @@ class EmbeddingEngine:
         self.embeddings = None
         self.metadata = []
         self.model_loaded = False
+        self._loading_thread = None
         
-        # Try to load existing embeddings first
+        # Try to load existing embeddings first (lightweight)
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             self.load()
-            if self.embeddings is not None:
-                # Try to load model for search
-                try:
-                    print("Loading SentenceTransformer model for search...")
-                    self.model = SentenceTransformer(MODEL_NAME)
-                    self.model_loaded = True
-                    print("✅ Model loaded successfully!")
-                except Exception as e:
-                    print(f"⚠️ Could not load model: {e}")
-                    print("📌 Search will use fallback mode")
-                    self.model_loaded = False
-                return
         
-        # If no embeddings, try to load model
+        # Start loading model in background (heavy)
+        self._start_background_loading()
+    
+    def _start_background_loading(self):
+        """Start loading the model in a background thread"""
+        if self._loading_thread is None or not self._loading_thread.is_alive():
+            self._loading_thread = threading.Thread(target=self._load_model_background, daemon=True)
+            self._loading_thread.start()
+            print("🔄 Started background thread for model loading...")
+    
+    def _load_model_background(self):
+        """Load the model in background to avoid blocking startup"""
         try:
-            print("Loading SentenceTransformer model...")
+            print("🔄 Loading SentenceTransformer model in background...")
             self.model = SentenceTransformer(MODEL_NAME)
             self.model_loaded = True
+            print("✅ Model loaded successfully in background!")
+            
+            # Rebuild embeddings with the loaded model
             self.build_embeddings()
         except Exception as e:
-            print(f"⚠️ Could not load model: {e}")
-            print("📌 Using fallback mode - embeddings will be built when FAQ data is added")
+            print(f"⚠️ Could not load model in background: {e}")
             self.model_loaded = False
     
     def build_embeddings(self):
-        if not self.model_loaded:
-            print("⚠️ Model not loaded. Trying to load...")
-            try:
-                self.model = SentenceTransformer(MODEL_NAME)
-                self.model_loaded = True
-            except Exception as e:
-                print(f"❌ Failed to load model: {e}")
-                return
+        if not self.model_loaded or self.model is None:
+            print("⚠️ Model not loaded yet. Will build embeddings when model is ready.")
+            return
         
         print("Building embeddings...")
         metadata = []
@@ -128,23 +127,20 @@ class EmbeddingEngine:
                 return False
         return False
     
+    def is_ready(self):
+        """Check if the model is loaded and ready for search"""
+        return self.model_loaded and self.model is not None
+    
     def search(self, query):
         # Return empty if no embeddings or metadata
         if not self.metadata or self.embeddings is None or len(self.embeddings) == 0:
             print("⚠️ No embeddings available for search")
             return []
         
-        # If model not loaded, try to load it once
-        if not self.model_loaded or self.model is None:
-            try:
-                print("🔄 Loading model for search...")
-                self.model = SentenceTransformer(MODEL_NAME)
-                self.model_loaded = True
-                print("✅ Model loaded successfully!")
-            except Exception as e:
-                print(f"⚠️ Model not available for search: {e}")
-                # Return fallback answer
-                return []
+        # If model not loaded yet, return empty (will be handled by chat endpoint)
+        if not self.is_ready():
+            print("⚠️ Model not loaded yet. Search will return empty.")
+            return []
         
         # Import here to avoid circular imports
         from app.core.preprocessing import TextPreprocessor
