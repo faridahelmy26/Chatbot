@@ -20,7 +20,7 @@ FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 # AI Model
 # ==========================
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "distiluse-base-multilingual-cased-v2" 
 
 # ==========================
 # Search Settings
