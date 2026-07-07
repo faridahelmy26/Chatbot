@@ -4,19 +4,15 @@ from pathlib import Path
 import warnings
 import os
 
-# تجاهل التحذيرات
 warnings.filterwarnings("ignore")
 
-# محاولة استيراد sentence_transformers
 try:
     from sentence_transformers import SentenceTransformer
 except ImportError as e:
     print(f"⚠️ Error importing sentence_transformers: {e}")
-    print("📦 Please install: pip install sentence-transformers==2.2.2")
     raise
 
 from sklearn.metrics.pairwise import cosine_similarity
-
 from app.models.database import Database
 from app.config import DATA_DIR, MODEL_NAME, TOP_K, SIMILARITY_THRESHOLD
 
@@ -39,18 +35,21 @@ class EmbeddingEngine:
         self.metadata = []
         self.model_loaded = False
         
-        # Load embeddings from file if exists
+        # Load embeddings if exists
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             self.load()
         
-        # Try to load model synchronously (simpler)
+        # Try to load model
+        self._load_model()
+    
+    def _load_model(self):
+        """Load model with timeout protection"""
         try:
-            print(f"🔄 Loading SentenceTransformer model: {MODEL_NAME}")
+            print(f"🔄 Loading lightweight model: {MODEL_NAME}")
             self.model = SentenceTransformer(MODEL_NAME)
             self.model_loaded = True
             print("✅ Model loaded successfully!")
             
-            # Build embeddings if needed
             if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
                 self.build_embeddings()
         except Exception as e:
@@ -115,16 +114,13 @@ class EmbeddingEngine:
         return False
     
     def is_ready(self):
-        """Check if the model is loaded and ready for search"""
         return self.model_loaded and self.model is not None
     
     def search(self, query):
-        if not self.metadata or self.embeddings is None or len(self.embeddings) == 0:
-            print("⚠️ No embeddings available for search")
+        if not self.metadata or self.embeddings is None:
             return []
         
         if not self.is_ready():
-            print("⚠️ Model not ready for search")
             return []
         
         from app.core.preprocessing import TextPreprocessor
@@ -152,8 +148,7 @@ class EmbeddingEngine:
             return []
         
         indices = [
-            i
-            for i, item in enumerate(self.metadata)
+            i for i, item in enumerate(self.metadata)
             if item["language"] == language
         ]
         
