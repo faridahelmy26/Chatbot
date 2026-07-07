@@ -3,18 +3,12 @@ import numpy as np
 from pathlib import Path
 import warnings
 import os
+import re
 
 warnings.filterwarnings("ignore")
 
-try:
-    from sentence_transformers import SentenceTransformer
-except ImportError as e:
-    print(f"⚠️ Error importing sentence_transformers: {e}")
-    raise
-
-from sklearn.metrics.pairwise import cosine_similarity
 from app.models.database import Database
-from app.config import DATA_DIR, MODEL_NAME, TOP_K, SIMILARITY_THRESHOLD
+from app.config import DATA_DIR, TOP_K, SIMILARITY_THRESHOLD, USE_AI_MODEL
 
 EMBEDDINGS_FILE = DATA_DIR / "embeddings.npy"
 METADATA_FILE = DATA_DIR / "metadata.json"
@@ -30,83 +24,49 @@ def get_embedding_engine():
 class EmbeddingEngine:
     def __init__(self):
         self.db = Database()
-        self.model = None
         self.embeddings = None
         self.metadata = []
         self.model_loaded = False
+        self.use_ai = USE_AI_MODEL
         
-        # Load embeddings if exists
+        # Load metadata from database
+        self.load_metadata()
+        
+        # Try to load embeddings if exists
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             self.load()
-        
-        # Try to load model
-        self._load_model()
     
-    def _load_model(self):
-        """Load model with timeout protection"""
-        try:
-            print(f"🔄 Loading lightweight model: {MODEL_NAME}")
-            self.model = SentenceTransformer(MODEL_NAME)
-            self.model_loaded = True
-            print("✅ Model loaded successfully!")
-            
-            if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
-                self.build_embeddings()
-        except Exception as e:
-            print(f"⚠️ Could not load model: {e}")
-            self.model_loaded = False
-    
-    def build_embeddings(self):
-        if not self.model_loaded or self.model is None:
-            print("⚠️ Model not loaded. Cannot build embeddings.")
-            return
-        
-        print("Building embeddings...")
-        metadata = []
-        sentences = []
+    def load_metadata(self):
+        """Load FAQ metadata from database"""
+        print("📚 Loading FAQ metadata from database...")
+        self.metadata = []
         
         for lang in ["ar", "en"]:
             rows = self.db.get_faq_by_language(lang)
             
             for row in rows:
                 question = row["question"]
-                metadata.append({
+                self.metadata.append({
                     "id": row["id"],
                     "question": question,
                     "answer": row["answer"],
                     "language": lang,
                     "category": row.get("category", "General")
                 })
-                sentences.append(question)
         
-        if not sentences:
-            print("No FAQs found to build embeddings")
-            return
-        
-        print(f"Encoding {len(sentences)} sentences...")
-        embeddings = self.model.encode(
-            sentences,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
-            show_progress_bar=False
-        )
-        
-        np.save(EMBEDDINGS_FILE, embeddings)
-        
-        with open(METADATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, ensure_ascii=False, indent=4)
-        
-        self.embeddings = embeddings
-        self.metadata = metadata
-        print(f"✅ Embeddings built: {len(metadata)} items")
+        print(f"✅ Loaded {len(self.metadata)} FAQs from database")
+    
+    def build_embeddings(self):
+        """Simple rebuild - just reload metadata"""
+        self.load_metadata()
+        print("✅ FAQ data reloaded")
     
     def load(self):
+        """Load embeddings from file if exists"""
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             try:
                 self.embeddings = np.load(EMBEDDINGS_FILE)
-                with open(METADATA_FILE, "r", encoding="utf-8") as f:
-                    self.metadata = json.load(f)
-                print(f"✅ Embeddings loaded: {len(self.metadata)} items")
+                print(f"✅ Embeddings loaded from file")
                 return True
             except Exception as e:
                 print(f"⚠️ Error loading embeddings: {e}")
@@ -114,64 +74,57 @@ class EmbeddingEngine:
         return False
     
     def is_ready(self):
-        return self.model_loaded and self.model is not None
+        """Always ready in simple mode"""
+        return True
     
     def search(self, query):
-        if not self.metadata or self.embeddings is None:
-            return []
-        
-        if not self.is_ready():
+        """
+        Simple text search without AI model
+        Uses keyword matching and basic similarity
+        """
+        if not self.metadata:
+            print("⚠️ No metadata available for search")
             return []
         
         from app.core.preprocessing import TextPreprocessor
         
-        try:
-            from app.query_expansion import QueryExpansion
-        except ImportError:
-            class QueryExpansion:
-                @staticmethod
-                def expand(text, language):
-                    return text
-        
         language = TextPreprocessor.detect_language(query)
-        query = QueryExpansion.expand(query, language)
-        query = TextPreprocessor.clean(query)
+        query_clean = TextPreprocessor.clean(query)
+        query_words = set(query_clean.lower().split())
         
-        try:
-            query_embedding = self.model.encode(
-                [query],
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
-        except Exception as e:
-            print(f"⚠️ Error encoding query: {e}")
+        if not query_words:
             return []
-        
-        indices = [
-            i for i, item in enumerate(self.metadata)
-            if item["language"] == language
-        ]
-        
-        if not indices:
-            return []
-        
-        lang_embeddings = self.embeddings[indices]
-        similarities = cosine_similarity(query_embedding, lang_embeddings)[0]
-        order = similarities.argsort()[::-1][:TOP_K]
         
         results = []
-        for idx in order:
-            item = self.metadata[indices[idx]]
-            similarity = float(similarities[idx])
-            
-            if similarity < SIMILARITY_THRESHOLD:
+        
+        for item in self.metadata:
+            if item["language"] != language:
                 continue
             
-            results.append({
-                "question": item["question"],
-                "answer": item["answer"],
-                "language": item["language"],
-                "similarity": similarity
-            })
+            question_clean = TextPreprocessor.clean(item["question"])
+            question_words = set(question_clean.lower().split())
+            
+            # Calculate simple similarity
+            common_words = query_words.intersection(question_words)
+            union_words = query_words.union(question_words)
+            
+            if not union_words:
+                continue
+            
+            similarity = len(common_words) / len(union_words)
+            
+            # Check for phrase match
+            if query_clean.lower() in question_clean.lower():
+                similarity = max(similarity, 0.8)
+            
+            if similarity >= SIMILARITY_THRESHOLD:
+                results.append({
+                    "question": item["question"],
+                    "answer": item["answer"],
+                    "language": item["language"],
+                    "similarity": round(similarity, 3)
+                })
         
-        return results
+        # Sort by similarity and return top K
+        results.sort(key=lambda x: x["similarity"], reverse=True)
+        return results[:TOP_K]
