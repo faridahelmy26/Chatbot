@@ -3,8 +3,6 @@ import numpy as np
 from pathlib import Path
 import warnings
 import os
-import asyncio
-import threading
 
 # تجاهل التحذيرات
 warnings.filterwarnings("ignore")
@@ -40,39 +38,28 @@ class EmbeddingEngine:
         self.embeddings = None
         self.metadata = []
         self.model_loaded = False
-        self._loading_thread = None
         
-        # Try to load existing embeddings first (lightweight)
+        # Load embeddings from file if exists
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             self.load()
         
-        # Start loading model in background (heavy)
-        self._start_background_loading()
-    
-    def _start_background_loading(self):
-        """Start loading the model in a background thread"""
-        if self._loading_thread is None or not self._loading_thread.is_alive():
-            self._loading_thread = threading.Thread(target=self._load_model_background, daemon=True)
-            self._loading_thread.start()
-            print("🔄 Started background thread for model loading...")
-    
-    def _load_model_background(self):
-        """Load the model in background to avoid blocking startup"""
+        # Try to load model synchronously (simpler)
         try:
-            print("🔄 Loading SentenceTransformer model in background...")
+            print(f"🔄 Loading SentenceTransformer model: {MODEL_NAME}")
             self.model = SentenceTransformer(MODEL_NAME)
             self.model_loaded = True
-            print("✅ Model loaded successfully in background!")
+            print("✅ Model loaded successfully!")
             
-            # Rebuild embeddings with the loaded model
-            self.build_embeddings()
+            # Build embeddings if needed
+            if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
+                self.build_embeddings()
         except Exception as e:
-            print(f"⚠️ Could not load model in background: {e}")
+            print(f"⚠️ Could not load model: {e}")
             self.model_loaded = False
     
     def build_embeddings(self):
         if not self.model_loaded or self.model is None:
-            print("⚠️ Model not loaded yet. Will build embeddings when model is ready.")
+            print("⚠️ Model not loaded. Cannot build embeddings.")
             return
         
         print("Building embeddings...")
@@ -132,24 +119,19 @@ class EmbeddingEngine:
         return self.model_loaded and self.model is not None
     
     def search(self, query):
-        # Return empty if no embeddings or metadata
         if not self.metadata or self.embeddings is None or len(self.embeddings) == 0:
             print("⚠️ No embeddings available for search")
             return []
         
-        # If model not loaded yet, return empty (will be handled by chat endpoint)
         if not self.is_ready():
-            print("⚠️ Model not loaded yet. Search will return empty.")
+            print("⚠️ Model not ready for search")
             return []
         
-        # Import here to avoid circular imports
         from app.core.preprocessing import TextPreprocessor
         
-        # استيراد QueryExpansion من الملف الصحيح
         try:
             from app.query_expansion import QueryExpansion
         except ImportError:
-            # Fallback if import fails
             class QueryExpansion:
                 @staticmethod
                 def expand(text, language):
