@@ -2,12 +2,16 @@ import os
 import uvicorn
 
 if __name__ == "__main__":
-    # Railway بيحدد المنفذ تلقائياً
+    # Railway بيضبط PORT تلقائياً
     port = int(os.getenv("PORT", 8000))
+    
+    print(f"🚀 Starting server on port: {port}")
+    print(f"🌐 Host: 0.0.0.0")
     
     uvicorn.run(
         "app.api:app",
-        host="0.0.0.0",  # لازم يكون 0.0.0.0 عشانRailway يشوفه
+        host="0.0.0.0",
         port=port,
-        reload=False  # في الإنتاج، خليها False
+        reload=False,
+        log_level="info"
     )
