@@ -17,10 +17,14 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# AI Model
+# AI Model - DISABLE for Railway
 # ==========================
 
-MODEL_NAME = "distiluse-base-multilingual-cased-v2" 
+# Use simple text matching instead of AI model
+USE_AI_MODEL = False
+MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"  # Not used when USE_AI_MODEL=False
+SIMILARITY_THRESHOLD = 0.3  # Lower threshold for simple matching
+TOP_K = 5
 
 # ==========================
 # Search Settings
