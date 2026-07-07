@@ -1,6 +1,6 @@
 {
   "build": {
-    "builder": "NIXPACKS",
+    "builder": "RAILPACK",
     "buildCommand": "cd Ma'man_chatbot && pip install -r requirements.txt"
   },
   "deploy": {
