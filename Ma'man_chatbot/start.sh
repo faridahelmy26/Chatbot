@@ -1,3 +1,6 @@
-#!/bin/bash
-cd Ma'man_chatbot
-python run.py
+#!/bin/sh
+
+exec uvicorn app.api:app \
+    --host 0.0.0.0 \
+    --port ${PORT:-8000} \
+    --timeout-keep-alive 120
