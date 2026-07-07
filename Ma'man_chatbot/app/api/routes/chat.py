@@ -5,6 +5,7 @@ import time
 
 from app.core.chatbot import ChatBot
 from app.core.embeddings import get_embedding_engine
+from app.core.preprocessing import TextPreprocessor
 from app.models.database import Database
 
 router = APIRouter(tags=["Chat"])
@@ -33,8 +34,29 @@ def chat(request: Request, chat_request: ChatRequest):
             detail="السؤال قصير جداً (أقل من 3 أحرف)"
         )
     
-    # Get bot and process
+    # Get bot
     bot = get_bot()
+    
+    # Check if model is loaded
+    if not bot.engine.is_ready():
+        language = TextPreprocessor.detect_language(chat_request.question)
+        
+        # Return friendly message in the right language
+        if language == "ar":
+            answer = "⏳ النظام جارٍ تحميله، يرجى المحاولة بعد لحظات."
+        else:
+            answer = "⏳ System is loading, please try again in a moment."
+        
+        return {
+            "status": False,
+            "answer": answer,
+            "similarity": 0,
+            "language": language,
+            "session_id": chat_request.session_id or str(uuid.uuid4()),
+            "response_time": 0
+        }
+    
+    # Process normally
     response = bot.ask(
         question=chat_request.question,
         session_id=chat_request.session_id
