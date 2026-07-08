@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import time
 
 # أضف المجلد الرئيسي إلى مسار Python
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,11 +64,22 @@ def import_faq_data():
     print("="*50)
     
     if added > 0:
-        print("🔄 Rebuilding embeddings...")
-        get_embedding_engine().build_embeddings()
-        print("✅ Embeddings rebuilt successfully!")
-    
-    db.close()
+        print("🔄 Loading embedding model (this may take a minute)...")
+        engine = get_embedding_engine()
+        
+        max_wait = 180
+        waited = 0
+        while not engine.is_ready() and waited < max_wait:
+            time.sleep(2)
+            waited += 2
+            print(f"   ⏳ Still loading model... ({waited}s)")
+        
+        if engine.is_ready():
+            print("🔄 Rebuilding embeddings...")
+            engine.build_embeddings()
+            print("✅ Embeddings rebuilt successfully!")
+        else:
+            print("❌ Model failed to load within timeout, embeddings NOT built!")
 
 
 if __name__ == "__main__":
