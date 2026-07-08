@@ -42,8 +42,8 @@ Thumbs.db
 # Railway
 .railway/
 
-# Models - but we want to keep the downloaded model
-# models/
+
+# Models - Keep the downloaded model
 !models/
-!models/all-MiniLM-L6-v2/
-!models/all-MiniLM-L6-v2/*
+!models/paraphrase-multilingual-MiniLM-L12-v2/
+!models/paraphrase-multilingual-MiniLM-L12-v2/*
