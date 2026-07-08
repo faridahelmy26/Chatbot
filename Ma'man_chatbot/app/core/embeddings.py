@@ -3,21 +3,20 @@ import numpy as np
 from pathlib import Path
 import warnings
 import os
-import threading
-import time
+import re
 
 warnings.filterwarnings("ignore")
 
+# محاولة استيراد sentence_transformers (لو موجود)
 try:
     from sentence_transformers import SentenceTransformer
-except ImportError as e:
-    print(f"⚠️ Error importing sentence_transformers: {e}")
-    raise
+except ImportError:
+    SentenceTransformer = None
 
 from sklearn.metrics.pairwise import cosine_similarity
 
 from app.models.database import Database
-from app.config import DATA_DIR, MODEL_NAME, LOCAL_MODEL_PATH, TOP_K, SIMILARITY_THRESHOLD
+from app.config import DATA_DIR, MODEL_NAME, TOP_K, SIMILARITY_THRESHOLD, USE_AI_MODEL
 
 EMBEDDINGS_FILE = DATA_DIR / "embeddings.npy"
 METADATA_FILE = DATA_DIR / "metadata.json"
@@ -37,74 +36,67 @@ class EmbeddingEngine:
         self.embeddings = None
         self.metadata = []
         self.model_loaded = False
-        self._loading_thread = None
-        self._loading_complete = False
+        self.use_ai = USE_AI_MODEL
         
-        if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
-            self.load()
+        # Load metadata from database
+        self.load_metadata()
         
-        self._load_model()
+        if self.use_ai:
+            print("🔄 Loading AI model...")
+            self._load_model()
+        else:
+            print("⚡ Running in lightweight mode (no AI model)")
+            self.model_loaded = True  # Always ready for simple search
+    
+    def load_metadata(self):
+        """Load FAQ metadata from database"""
+        print("📚 Loading FAQ metadata from database...")
+        self.metadata = []
+        
+        for lang in ["ar", "en"]:
+            rows = self.db.get_faq_by_language(lang)
+            
+            for row in rows:
+                row_dict = dict(row)
+                
+                question = row_dict.get("question", "")
+                answer = row_dict.get("answer", "")
+                category = row_dict.get("category") or "General"
+                
+                self.metadata.append({
+                    "id": row_dict.get("id"),
+                    "question": question,
+                    "answer": answer,
+                    "language": lang,
+                    "category": category
+                })
+        
+        print(f"✅ Loaded {len(self.metadata)} FAQs from database")
     
     def _load_model(self):
-        """Load model - try local first, then download"""
+        """Load AI model"""
         try:
-            # Check if local model exists
-            if LOCAL_MODEL_PATH.exists():
-                print(f"📂 Loading local model from: {LOCAL_MODEL_PATH}")
-                self.model = SentenceTransformer(str(LOCAL_MODEL_PATH))
-                self.model_loaded = True
-                self._loading_complete = True
-                print("✅ Local model loaded successfully!")
-                
-                if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
-                    self.build_embeddings()
+            if SentenceTransformer is None:
+                print("⚠️ SentenceTransformer not available")
+                self.model_loaded = False
                 return
             
-            # If no local model, download
-            print(f"🔄 Downloading model: {MODEL_NAME}")
-            self._start_background_loading()
-            
-        except Exception as e:
-            print(f"⚠️ Error loading model: {e}")
-            self._start_background_loading()
-    
-    def _start_background_loading(self):
-        """Start downloading the model in background"""
-        if self._loading_thread is None or not self._loading_thread.is_alive():
-            self._loading_thread = threading.Thread(target=self._load_model_background, daemon=True)
-            self._loading_thread.start()
-            print("🔄 Started background thread for model download...")
-    
-    def _load_model_background(self):
-        """Download model in background"""
-        try:
-            print(f"🔄 Downloading SentenceTransformer model: {MODEL_NAME}")
-            start_time = time.time()
-            
+            print(f"🔄 Loading model: {MODEL_NAME}")
             self.model = SentenceTransformer(MODEL_NAME)
             self.model_loaded = True
-            self._loading_complete = True
+            print("✅ Model loaded successfully!")
             
-            elapsed = time.time() - start_time
-            print(f"✅ Model downloaded and loaded in {elapsed:.2f} seconds!")
-            
-            # Save model locally for future use
-            try:
-                LOCAL_MODEL_PATH.parent.mkdir(exist_ok=True)
-                self.model.save(str(LOCAL_MODEL_PATH))
-                print(f"💾 Model saved locally to: {LOCAL_MODEL_PATH}")
-            except Exception as e:
-                print(f"⚠️ Could not save model locally: {e}")
-            
-            self.build_embeddings()
+            # Build embeddings if needed
+            if not EMBEDDINGS_FILE.exists() or not METADATA_FILE.exists():
+                self.build_embeddings()
         except Exception as e:
-            print(f"⚠️ Could not download model: {e}")
+            print(f"⚠️ Error loading model: {e}")
             self.model_loaded = False
-            self._loading_complete = True
     
     def build_embeddings(self):
+        """Build embeddings using AI model"""
         if not self.model_loaded or self.model is None:
-            print("⚠️ Model not loaded yet.")
+            print("⚠️ Model not loaded. Cannot build embeddings.")
             return
         
         print("Building embeddings...")
@@ -131,7 +123,7 @@ class EmbeddingEngine:
                 sentences.append(question)
         
         if not sentences:
-            print("No FAQs found")
+            print("No FAQs found to build embeddings")
             return
         
         print(f"Encoding {len(sentences)} sentences...")
@@ -152,6 +144,7 @@ class EmbeddingEngine:
         print(f"✅ Embeddings built: {len(metadata)} items")
     
     def load(self):
+        """Load embeddings from file"""
         if EMBEDDINGS_FILE.exists() and METADATA_FILE.exists():
             try:
                 self.embeddings = np.load(EMBEDDINGS_FILE)
@@ -165,21 +158,74 @@ class EmbeddingEngine:
         return False
     
     def is_ready(self):
-        return self.model_loaded and self.model is not None
-    
-    def is_loading(self):
-        return not self._loading_complete
+        """Check if ready for search"""
+        if self.use_ai:
+            return self.model_loaded and self.model is not None
+        return True  # Always ready in simple mode
     
     def search(self, query):
+        """Main search function - chooses mode based on config"""
         print(f"🔍 Searching for: {query}")
         print(f"📚 Metadata count: {len(self.metadata)}")
         
-        if not self.metadata or self.embeddings is None or len(self.embeddings) == 0:
-            print("⚠️ No embeddings available")
+        if not self.metadata:
+            print("⚠️ No metadata available")
             return []
         
-        if not self.is_ready():
-            print("⚠️ Model not loaded yet")
+        if self.use_ai and self.is_ready():
+            return self._ai_search(query)
+        else:
+            return self._simple_search(query)
+    
+    def _simple_search(self, query):
+        """Simple text matching without AI"""
+        from app.core.preprocessing import TextPreprocessor
+        
+        language = TextPreprocessor.detect_language(query)
+        query_clean = TextPreprocessor.clean(query).lower()
+        query_words = set(query_clean.split())
+        
+        # Remove common stop words
+        stop_words = {'و', 'في', 'من', 'على', 'الى', 'عن', 'مع', 'هو', 'هي', 'ما', 'اذا', 'ان', 'ال', 'هل', 'كيف'}
+        query_words = query_words - stop_words
+        
+        if not query_words:
+            return []
+        
+        results = []
+        
+        for item in self.metadata:
+            if item["language"] != language:
+                continue
+            
+            question_clean = TextPreprocessor.clean(item["question"]).lower()
+            question_words = set(question_clean.split()) - stop_words
+            
+            # Check for exact match
+            if query_clean in question_clean or question_clean in query_clean:
+                similarity = 0.9
+            else:
+                # Word overlap
+                common = query_words.intersection(question_words)
+                union = query_words.union(question_words)
+                similarity = len(common) / len(union) if union else 0
+            
+            if similarity >= SIMILARITY_THRESHOLD:
+                results.append({
+                    "question": item["question"],
+                    "answer": item["answer"],
+                    "language": item["language"],
+                    "similarity": round(similarity, 3)
+                })
+        
+        results.sort(key=lambda x: x["similarity"], reverse=True)
+        print(f"✅ Simple search results: {len(results)}")
+        return results[:TOP_K]
+    
+    def _ai_search(self, query):
+        """AI-powered semantic search"""
+        if not self.metadata or self.embeddings is None or len(self.embeddings) == 0:
+            print("⚠️ No embeddings available for AI search")
             return []
         
         from app.core.preprocessing import TextPreprocessor
@@ -205,7 +251,6 @@ class EmbeddingEngine:
                 convert_to_numpy=True,
                 normalize_embeddings=True
             )
-            print(f"📊 Query embedding shape: {query_embedding.shape}")
         except Exception as e:
             print(f"⚠️ Error encoding query: {e}")
             return []
@@ -214,8 +259,6 @@ class EmbeddingEngine:
             i for i, item in enumerate(self.metadata)
             if item["language"] == language
         ]
-        
-        print(f"📊 Language indices: {len(indices)}")
         
         if not indices:
             return []
@@ -247,5 +290,5 @@ class EmbeddingEngine:
                 "similarity": similarity
             })
         
-        print(f"✅ Results count: {len(results)}")
+        print(f"✅ AI search results: {len(results)}")
         return results
