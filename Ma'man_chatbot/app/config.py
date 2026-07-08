@@ -40,7 +40,7 @@ else:
     # ✅ على جهازك: مع الموديل الكامل
     USE_AI_MODEL = True
     MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"  # 👈 الموديل بتاعك
-    SIMILARITY_THRESHOLD = 0.3
+    SIMILARITY_THRESHOLD = 0.05
     TOP_K = 5
     print(f"🔄 Running in DEVELOPMENT mode (with AI model: {MODEL_NAME})")
 
