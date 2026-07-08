@@ -433,3 +433,40 @@ class Database:
                     "total": total_chats
                 }
             }
+        
+    def import_faqs_from_json(self, json_path):
+    """Import FAQs from JSON file if table is empty"""
+    import json
+    from pathlib import Path
+    
+    # Check if FAQ table is empty
+    with self.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM faq")
+        count = cursor.fetchone()[0]
+        
+        if count > 0:
+            print(f"📚 Database already has {count} FAQs. Skipping import.")
+            return
+        
+    print("📂 Importing FAQs from JSON file...")
+    
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"⚠️ JSON file not found: {json_path}")
+        return
+    
+    added = 0
+    for item in data:
+        question_ar = item.get('question_ar', '').strip()
+        answer_ar = item.get('answer_ar', '').strip()
+        question_en = item.get('question_en', '').strip()
+        answer_en = item.get('answer_en', '').strip()
+        category = item.get('category', 'General')
+        
+        if self.insert_faq(question_ar, answer_ar, question_en, answer_en, category):
+            added += 1
+    
+    print(f"✅ Imported {added} FAQs from JSON")    
