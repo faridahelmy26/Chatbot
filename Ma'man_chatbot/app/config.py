@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ==========================
 # Project Paths
@@ -17,17 +20,17 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# AI Model
+# AI Model - Smaller model for Railway (saves memory)
 # ==========================
 
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+# ✅ استخدام موديل أصغر (90 MB بدل 500 MB)
+MODEL_NAME = "all-MiniLM-L6-v2"  # 👈 أصغر وأسرع
 
 # ==========================
 # Search Settings
 # ==========================
 
-SIMILARITY_THRESHOLD = 0.60
-
+SIMILARITY_THRESHOLD = 0.35  # مناسب للموديل الأصغر
 TOP_K = 5
 
 # ==========================
