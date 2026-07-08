@@ -17,8 +17,10 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# AI Model
+# AI Model - Enable AI search
 # ==========================
+
+USE_AI_MODEL = True  # 👈 أضيفي السطر ده
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
