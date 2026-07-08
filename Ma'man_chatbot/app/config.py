@@ -1,8 +1,5 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # ==========================
 # Project Paths
@@ -20,20 +17,17 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# AI Model - Local model path
+# AI Model
 # ==========================
 
-# نموذج أصغر للحفاظ على الذاكرة
-MODEL_NAME = "all-MiniLM-L6-v2"
-
-# المسار المحلي للنموذج
-LOCAL_MODEL_PATH = BASE_DIR / "models" / "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 # ==========================
 # Search Settings
 # ==========================
 
-SIMILARITY_THRESHOLD = 0.2  # منخفضة عشان يشتغل مع النموذج الأصغر
+SIMILARITY_THRESHOLD = 0.60
+
 TOP_K = 5
 
 # ==========================
