@@ -33,7 +33,7 @@ if IS_PRODUCTION:
     # ✅ على Railway: من غير موديل (مطابقة نصوص بسيطة)
     USE_AI_MODEL = False
     MODEL_NAME = None  # مش هنستخدم موديل
-    SIMILARITY_THRESHOLD = 0.1
+    SIMILARITY_THRESHOLD = 0.05
     TOP_K = 5
     print("⚡ Running in PRODUCTION mode (no AI model)")
 else:
