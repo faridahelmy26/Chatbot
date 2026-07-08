@@ -4,7 +4,7 @@ import os
 # أضف المجلد الرئيسي إلى مسار Python
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.database import Database
+from app.models.database import Database
 
 
 def init_database():
