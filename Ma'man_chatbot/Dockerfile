@@ -17,4 +17,6 @@ RUN mkdir -p /app/data
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+RUN chmod +x start.sh
+
+CMD ["sh", "-c", "python init_db.py && python import_faq.py && sh start.sh"]
