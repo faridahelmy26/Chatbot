@@ -1,8 +1,5 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # ==========================
 # Project Paths
@@ -20,29 +17,18 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# Environment Detection
+# AI Model
 # ==========================
 
-IS_PRODUCTION = os.getenv("RAILWAY_ENVIRONMENT", "development") == "production"
+MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
 # ==========================
-# AI Model - Different modes for different environments
+# Search Settings
 # ==========================
 
-if IS_PRODUCTION:
-    # ✅ على Railway: من غير موديل (مطابقة نصوص بسيطة)
-    USE_AI_MODEL = False
-    MODEL_NAME = None  # مش هنستخدم موديل
-    SIMILARITY_THRESHOLD = 0.05
-    TOP_K = 5
-    print("⚡ Running in PRODUCTION mode (no AI model)")
-else:
-    # ✅ على جهازك: مع الموديل الكامل
-    USE_AI_MODEL = True
-    MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"  # 👈 الموديل بتاعك
-    SIMILARITY_THRESHOLD = 0.05
-    TOP_K = 5
-    print(f"🔄 Running in DEVELOPMENT mode (with AI model: {MODEL_NAME})")
+SIMILARITY_THRESHOLD = 0.05
+
+TOP_K = 5
 
 # ==========================
 # Rate Limiting
