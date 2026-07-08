@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import admin, chat, stats
 from app.models.database import Database
+from app.config import FAQ_JSON_PATH
 
 app = FastAPI(
     title="Ma'man AI Chatbot",
@@ -39,24 +40,19 @@ _db_initialized = False
 
 @app.on_event("startup")
 def startup_event():
-    """Create tables on startup"""
+    """Create tables and import data on startup"""
     global _db_initialized
     try:
         db.create_tables()
+        
+        # Import FAQs from JSON if table is empty
+        db.import_faqs_from_json(FAQ_JSON_PATH)
+        
         _db_initialized = True
         print("✅ Database initialized successfully!")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
         _db_initialized = False
-
-@app.get("/")
-def home():
-    """Root endpoint"""
-    return {
-        "message": "Ma'man Chatbot API Running",
-        "version": "1.0",
-        "status": "active"
-    }
 
 @app.get("/health")
 def health_check():
