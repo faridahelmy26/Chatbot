@@ -20,17 +20,20 @@ EMBEDDINGS_PATH = DATA_DIR / "embeddings.pkl"
 FAQ_JSON_PATH = DATA_DIR / "faq_data.json"
 
 # ==========================
-# AI Model - Smaller model for Railway (saves memory)
+# AI Model - Local model path
 # ==========================
 
-# ✅ استخدام موديل أصغر (90 MB بدل 500 MB)
-MODEL_NAME = "all-MiniLM-L6-v2"  # 👈 أصغر وأسرع
+# نموذج أصغر للحفاظ على الذاكرة
+MODEL_NAME = "all-MiniLM-L6-v2"
+
+# المسار المحلي للنموذج
+LOCAL_MODEL_PATH = BASE_DIR / "models" / "all-MiniLM-L6-v2"
 
 # ==========================
 # Search Settings
 # ==========================
 
-SIMILARITY_THRESHOLD = 0.35  # مناسب للموديل الأصغر
+SIMILARITY_THRESHOLD = 0.2  # منخفضة عشان يشتغل مع النموذج الأصغر
 TOP_K = 5
 
 # ==========================
