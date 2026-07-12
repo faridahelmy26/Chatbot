@@ -1,0 +1,254 @@
+[
+    {
+        "id": 1,
+        "question": "ما هو مأمن؟",
+        "answer": "Ma’man هو منصة لإدارة المحتوى مخصصة للأطفال والمراهقين المسلمين، تهدف إلى توفير محتوى تعليمي، ديني، فني، ولغوي آمن ومفيد.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 2,
+        "question": "لمن تُوجه هذه المنصة؟",
+        "answer": "المنصة موجهة للأطفال والمراهقين المسلمين وأولياء أمورهم لتوفير بيئة آمنة للتعلم والترفيه.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 3,
+        "question": "هل المنصة آمنة للأطفال والمراهقين؟",
+        "answer": "نعم، توفر المنصة رقابة دقيقة من الأهل على ما يشاهده الأطفال وتحظر المحتوى غير المناسب.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 4,
+        "question": "كيف تساعد المنصة في حماية الأطفال من المحتوى الضار؟",
+        "answer": "المنصة تستخدم فلترة محتوى ذكية، وتتيح للأهل مراقبة المحتوى وتحديد ما يصل للطفل، بالإضافة لمتابعة أنشطة الطفل.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 5,
+        "question": "هل يوجد تطبيق على الهاتف أم فقط موقع ويب؟",
+        "answer": "يوجد كلاهما، تطبيق للهواتف الذكية وموقع ويب للوصول السهل إلى المحتوى.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 6,
+        "question": "هل أحتاج للاشتراك للوصول لكل الخدمات؟",
+        "answer": "يوجد نسخة مجانية مع خدمات محدودة، ويمكن الاشتراك للوصول إلى مميزات إضافية.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 7,
+        "question": "كيف أختار الدورة المناسبة لعمر طفلي؟",
+        "answer": "عند التسجيل، يُطلب من المستخدم تحديد عمر الطفل، وبناءً عليه توصي المنصة بالدورة الأنسب.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 8,
+        "question": "ما الفرق بين دورة مستقلة ودورة ضمن مسار تعلم؟",
+        "answer": "الدورة المستقلة مصممة لعمر محدد ويمكن أخذها منفردة، أما دورة مسار التعلم فهي لها مستويات ومقررات مسبقة يجب إكمالها.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 9,
+        "question": "هل يمكن لطفلي التقدم في مسار التعلم تلقائيًا بعد إتمام دورة؟",
+        "answer": "نعم، إتمام دورة في مسار التعلم يفتح تلقائيًا الدورة التالية.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 10,
+        "question": "كيف يتم تقييم الطالب في كل دورة؟",
+        "answer": "يتم التقييم من خلال اختبارات قصيرة بعد كل جزء، وأحيانًا يوجد مختبر عملي، وفي نهاية الدورة امتحان نهائي.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 11,
+        "question": "هل يمكن للطالب الحصول على شهادة بعد اجتياز الدورة؟",
+        "answer": "نعم، بعد اجتياز الامتحان النهائي يحصل الطالب على شهادة.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 12,
+        "question": "هل يمكن استخدام النقاط المكتسبة لفتح خدمات مدفوعة أو الحصول على هدايا؟",
+        "answer": "نعم، يمكن استخدام النقاط المكتسبة من تقدم الطالب لفتح خدمات مدفوعة أو الحصول على هدايا.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 13,
+        "question": "كيف يمكنني الوصول إلى محتوى الدورات؟",
+        "answer": "يمكن الوصول إلى المحتوى من خلال الفيديوهات، الكتب، المقالات، والتمارين العملية الموجودة في كل دورة.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 14,
+        "question": "هل يمكن الانضمام لمجموعات تواصل خاصة بالدورات؟",
+        "answer": "نعم، بعد التسجيل في الدورة يمكن الانضمام إلى المجموعة الخاصة بها للتواصل مع الطلاب الآخرين.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 15,
+        "question": "هل يمكن التفاعل مع معلمين أو متخصصين؟",
+        "answer": "نعم، يمكن للطلاب والأهل التواصل مع المعلمين أو المتخصصين عبر المنصة.",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 16,
+        "question": "ازيك عامل ايه",
+        "answer": "الحمدلله",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 17,
+        "question": "هل ممكن أطير بالطائرة من مصر؟",
+        "answer": "نعم",
+        "language": "ar",
+        "category": "General"
+    },
+    {
+        "id": 18,
+        "question": "سؤال اختبار",
+        "answer": "إجابة اختبار",
+        "language": "ar",
+        "category": "Test"
+    },
+    {
+        "id": 1,
+        "question": "What is Ma’man?",
+        "answer": "Ma’man is a content management platform designed for Muslim children and teenagers, providing safe and beneficial educational, religious, artistic, and language content.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 2,
+        "question": "Who is this platform for?",
+        "answer": "The platform is targeted at Muslim children and teenagers, and their parents, providing a safe environment for learning and entertainment.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 3,
+        "question": "Is the platform safe for children and teenagers?",
+        "answer": "Yes, the platform allows parents to monitor their children's activity closely and blocks inappropriate content.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 4,
+        "question": "How does the platform protect children from harmful content?",
+        "answer": "The platform uses smart content filtering and allows parents to control and monitor what the child sees, along with tracking their activities.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 5,
+        "question": "Is there a mobile app or just a website?",
+        "answer": "There is both a mobile app and a website for easy access to the content.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 6,
+        "question": "Do I need a subscription to access all services?",
+        "answer": "There is a free version with limited services, and a subscription is required for additional features.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 7,
+        "question": "How do I choose the right course for my child's age?",
+        "answer": "Upon registration, users specify the child's age, and the platform recommends the most suitable course accordingly.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 8,
+        "question": "What is the difference between a standalone course and a course in a learning path?",
+        "answer": "A standalone course is designed for a specific age and can be taken individually, while a learning path course has prerequisites and multiple levels.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 9,
+        "question": "Can my child progress automatically in the learning path after completing a course?",
+        "answer": "Yes, completing a course in a learning path automatically unlocks the next course.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 10,
+        "question": "How is the student evaluated in each course?",
+        "answer": "Students are evaluated through quizzes after each topic, practical labs if applicable, and a final exam at the end of the course.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 11,
+        "question": "Can the student get a certificate after completing the course?",
+        "answer": "Yes, the student receives a certificate after passing the final exam.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 12,
+        "question": "Can earned points be used to unlock paid services or get gifts?",
+        "answer": "Yes, points earned from student progress can be used to unlock paid services or receive gifts.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 13,
+        "question": "How can I access course content?",
+        "answer": "Content can be accessed through videos, books, articles, and practical exercises available in each course.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 14,
+        "question": "Can I join communication groups for the courses?",
+        "answer": "Yes, after enrolling in a course, you can join its communication group to interact with other students.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 15,
+        "question": "Can I interact with teachers or specialists?",
+        "answer": "Yes, students and parents can communicate with teachers or specialists through the platform.",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 16,
+        "question": "how are you",
+        "answer": "good",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 17,
+        "question": "Is it possible for me to fly out of Egypt?",
+        "answer": "Yes",
+        "language": "en",
+        "category": "General"
+    },
+    {
+        "id": 18,
+        "question": "Test Question",
+        "answer": "Test Answer",
+        "language": "en",
+        "category": "Test"
+    }
+]
