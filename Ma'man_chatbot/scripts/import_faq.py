@@ -1,6 +1,7 @@
 import sys
 import json
 from pathlib import Path
+import time
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent
@@ -46,7 +47,11 @@ def main():
     if added > 0:
         print("🔄 Building embeddings...")
         try:
-            get_embedding_engine().build_embeddings()
+            engine = get_embedding_engine()
+            while not engine.is_ready():
+                time.sleep(1)
+
+            engine.build_embeddings()
             print("✅ Done!")
         except Exception as e:
             print(f"⚠️  Embeddings build error: {e}")
