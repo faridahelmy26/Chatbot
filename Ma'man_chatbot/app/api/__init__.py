@@ -39,24 +39,24 @@ _db_initialized = False
 
 @app.on_event("startup")
 def startup_event():
-    """Create tables on startup"""
     global _db_initialized
+
     try:
         db.create_tables()
+
+        # إذا كانت قاعدة البيانات فارغة، استورد بيانات الـ FAQ
+        if db.get_active_faq_count() == 0:
+            print("📥 Importing FAQ data...")
+
+            from scripts.import_faq import main as import_faq_main
+            import_faq_main()
+
         _db_initialized = True
         print("✅ Database initialized successfully!")
+
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
         _db_initialized = False
-
-@app.get("/")
-def home():
-    """Root endpoint"""
-    return {
-        "message": "Ma'man Chatbot API Running",
-        "version": "1.0",
-        "status": "active"
-    }
 
 @app.get("/health")
 def health_check():
