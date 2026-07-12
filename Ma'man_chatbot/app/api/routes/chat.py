@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException, status
 from pydantic import BaseModel
+from app.core.preprocessing import TextPreprocessor
 import uuid
 import time
 
@@ -23,24 +24,7 @@ class ChatRequest(BaseModel):
     question: str
     session_id: str | None = None
 
-@router.post("/chat")
-def chat(request: Request, chat_request: ChatRequest):
-    """Process chat request"""
-    # Validate question
-    if not chat_request.question or len(chat_request.question.strip()) < 3:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="السؤال قصير جداً (أقل من 3 أحرف)"
-        )
-    
-    # Get bot and process
-    bot = get_bot()
-    response = bot.ask(
-        question=chat_request.question,
-        session_id=chat_request.session_id
-    )
-    
-    return response
+
 
 @router.get("/session/{session_id}/history")
 def get_session_history(request: Request, session_id: str):
