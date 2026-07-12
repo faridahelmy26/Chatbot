@@ -1,7 +1,0 @@
-{
-  "deploy": {
-    "volumes": {
-      "data": "/app/data"
-    }
-  }
-}
