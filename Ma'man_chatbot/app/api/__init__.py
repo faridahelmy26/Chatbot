@@ -44,19 +44,18 @@ def startup_event():
     try:
         db.create_tables()
 
-        # إذا كانت قاعدة البيانات فارغة، استورد بيانات الـ FAQ
+        # إذا كانت قاعدة البيانات فارغة
         if db.get_active_faq_count() == 0:
             print("📥 Importing FAQ data...")
 
-            from scripts.import_faq import main as import_faq_main
-            import_faq_main()
+            from scripts.import_faq import main as import_main
+            import_main()
 
         _db_initialized = True
         print("✅ Database initialized successfully!")
 
     except Exception as e:
-        print(f"⚠️ Database initialization error: {e}")
-        _db_initialized = False
+        print(f"❌ Startup error: {e}")
 
 @app.get("/health")
 def health_check():
